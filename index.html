@@ -3,90 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkladWeb - Афіша подій</title>
+    <title>SkladWeb - Універсальний редактор</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="toolbar">
-        <button id="searchBtn" class="toolbar-btn search-btn">🔍</button>
-        <button id="addDateBtn" class="toolbar-btn">+ Додати дату</button>
+        <button id="backBtn" class="toolbar-btn back-btn" style="display:none;">← Назад</button>
+        <button id="toggleFiltersBtn" class="toolbar-btn search-btn" style="display:none;">🔍 Фільтри</button>
+        <button id="addDateBtn" class="toolbar-btn">+ Додати папку</button>
         <button id="printBtn" class="toolbar-btn">🖨️ Друк</button>
         <button id="saveBtn" class="toolbar-btn">💾 Зберегти</button>
         <button id="loadBtn" class="toolbar-btn">📂 Завантажити</button>
-        <button id="expandAllBtn" class="toolbar-btn">▼ Розгорнути все</button>
-        <button id="collapseAllBtn" class="toolbar-btn">▲ Згорнути все</button>
-    </div>
-
-    <!-- Search Panel -->
-    <div id="searchPanel" class="search-panel">
-        <div class="search-panel-content">
-            <button id="closeSearchBtn" class="close-search-btn">&times;</button>
-            <h3>Пошук подій</h3>
-            <div class="search-fields">
-                <div class="search-field">
-                    <label>Дата:</label>
-                    <input type="text" id="searchDate" placeholder="17 липня">
-                </div>
-                <div class="search-field">
-                    <label>Час (від):</label>
-                    <input type="time" id="searchTimeFrom">
-                </div>
-                <div class="search-field">
-                    <label>Час (до):</label>
-                    <input type="time" id="searchTimeTo">
-                </div>
-                <div class="search-field">
-                    <label>Місце:</label>
-                    <input type="text" id="searchPlace" placeholder="Будинок Кіно">
-                </div>
-            </div>
-            <div class="search-actions">
-                <button id="applySearchBtn" class="toolbar-btn">Знайти</button>
-                <button id="clearSearchBtn" class="toolbar-btn">Очистити</button>
-            </div>
-            <div id="searchResults" class="search-results"></div>
+        <button id="expandAllBtn" class="toolbar-btn" style="display:none;">▼ Розгорнути</button>
+        <button id="collapseAllBtn" class="toolbar-btn" style="display:none;">▲ Згорнути</button>
+        <div class="view-toggle">
+            <button id="viewTilesBtn" class="toolbar-btn view-btn active" title="Плитка">▦</button>
+            <button id="viewListBtn" class="toolbar-btn view-btn" title="Список">≡</button>
         </div>
     </div>
 
-    <div class="page-container">
-        <div class="a4-page" id="document">
-            <h1 class="document-title" contenteditable="true">Афіша кіно</h1>
+    <div class="main-container">
+        <!-- Left Sidebar - Filters (Rozetka style) -->
+        <aside id="filtersSidebar" class="filters-sidebar">
+            <div class="sidebar-header">
+                <h3>🔍 Фільтри</h3>
+                <button id="clearAllFilters" class="clear-filters-btn">Очистити все</button>
+            </div>
+
+            <div id="filtersContainer" class="filters-container">
+                <!-- Dynamic filters will be generated here -->
+            </div>
+        </aside>
+
+        <!-- Main Document Area -->
+        <main class="document-area">
+            <div class="a4-page" id="document">
+                <h1 class="document-title" contenteditable="true">Мій документ</h1>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for choosing record type -->
+    <div id="typeModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Що додати?</h2>
+            <div class="type-selector">
+                <button class="type-btn" data-type="movie">
+                    <span class="type-icon">🎬</span>
+                    <span class="type-name">Подія / Фільм</span>
+                    <span class="type-desc">Назва, місце, час, посилання</span>
+                </button>
+                <button class="type-btn" data-type="task">
+                    <span class="type-icon">✅</span>
+                    <span class="type-name">Список задач</span>
+                    <span class="type-desc">Швидке введення задач</span>
+                </button>
+                <button class="type-btn" data-type="note">
+                    <span class="type-icon">📝</span>
+                    <span class="type-name">Нотатка</span>
+                    <span class="type-desc">Вільний текст</span>
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- Modal for adding/editing event -->
+    <!-- Modal for adding/editing movie/event -->
     <div id="eventModal" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
-            <h2 id="modalTitle">Додати подію</h2>
+            <h2 id="modalTitle">Додати запис</h2>
             <form id="eventForm">
-                <label>Назва:</label>
-                <input type="text" id="eventName" required placeholder="Небеса Діани">
-
-                <label>Місце:</label>
-                <input type="text" id="eventPlace" required placeholder="Будинок Кіно">
-
-                <label>Час:</label>
-                <input type="text" id="eventTime" required placeholder="12:30">
-
-                <label>Посилання:</label>
-                <input type="url" id="eventLink" placeholder="https://...">
+                <div id="dynamicFormFields">
+                    <!-- Dynamic fields will be generated here -->
+                </div>
 
                 <input type="hidden" id="eventId">
                 <input type="hidden" id="dateGroupId">
+                <input type="hidden" id="eventType" value="movie">
 
                 <button type="submit" class="submit-btn">Зберегти</button>
             </form>
         </div>
     </div>
 
-    <!-- Modal for adding date -->
+    <!-- Modal for quick task entry -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content modal-wide">
+            <span class="close-btn">&times;</span>
+            <h2>✅ Швидке введення задач</h2>
+            <p class="modal-hint">Натисніть Enter щоб додати задачу. Backspace на порожньому полі — завершити.</p>
+            <div id="tasksList" class="tasks-list">
+                <!-- Tasks will appear here -->
+            </div>
+            <input type="text" id="taskInput" class="task-input" placeholder="Введіть задачу..." autofocus>
+            <input type="hidden" id="taskGroupId">
+        </div>
+    </div>
+
+    <!-- Modal for note entry -->
+    <div id="noteModal" class="modal">
+        <div class="modal-content modal-wide">
+            <span class="close-btn">&times;</span>
+            <h2>📝 Нотатка</h2>
+            <form id="noteForm">
+                <textarea id="noteText" class="note-textarea" placeholder="Введіть текст нотатки..." rows="8"></textarea>
+                <input type="hidden" id="noteGroupId">
+                <input type="hidden" id="noteId">
+                <button type="submit" class="submit-btn">Зберегти</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for adding group -->
     <div id="dateModal" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
-            <h2>Додати дату</h2>
+            <h2>Додати групу</h2>
             <form id="dateForm">
-                <label>Дата:</label>
+                <label>Назва групи:</label>
                 <input type="text" id="dateName" required placeholder="17 липня:">
 
                 <button type="submit" class="submit-btn">Додати</button>

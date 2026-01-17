@@ -1,3 +1,6 @@
+// ============ AUTHENTICATION STATE ============
+let currentUser = null;
+
 // Data structure with fixed fields
 let documentData = {
     title: "Мій документ",
@@ -23,6 +26,123 @@ let activeFilters = {
     fields: {},
     type: [] // filter by record type
 };
+
+// ============ FIREBASE AUTH ============
+
+function initAuth() {
+    // Listen for auth state changes
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            // User is signed in
+            currentUser = user;
+            showMainApp();
+            updateUserUI(user);
+            await loadUserData();
+        } else {
+            // User is signed out
+            currentUser = null;
+            showLoginScreen();
+        }
+    });
+
+    // Google login button
+    document.getElementById('googleLoginBtn').addEventListener('click', async () => {
+        try {
+            await auth.signInWithPopup(googleProvider);
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('Помилка входу: ' + error.message);
+        }
+    });
+
+    // Logout button
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        try {
+            await auth.signOut();
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    });
+}
+
+function showLoginScreen() {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+}
+
+function showMainApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+}
+
+function updateUserUI(user) {
+    const avatar = document.getElementById('userAvatar');
+    const name = document.getElementById('userName');
+
+    if (user.photoURL) {
+        avatar.src = user.photoURL;
+        avatar.style.display = 'block';
+    } else {
+        avatar.style.display = 'none';
+    }
+
+    name.textContent = user.displayName || user.email;
+}
+
+// ============ FIRESTORE DATA ============
+
+async function loadUserData() {
+    if (!currentUser) return;
+
+    try {
+        const doc = await db.collection('users').doc(currentUser.uid).get();
+
+        if (doc.exists) {
+            const data = doc.data();
+            documentData = {
+                title: data.title || "Мої записи",
+                fields: data.fields || getDefaultFields(),
+                dateGroups: data.dateGroups || []
+            };
+        } else {
+            // First time user - create with sample data
+            initSampleData();
+            await saveUserData();
+        }
+
+        render();
+    } catch (error) {
+        console.error('Error loading data:', error);
+        // Fallback to sample data
+        initSampleData();
+        render();
+    }
+}
+
+async function saveUserData() {
+    if (!currentUser) return;
+
+    try {
+        await db.collection('users').doc(currentUser.uid).set({
+            title: documentData.title,
+            fields: documentData.fields,
+            dateGroups: documentData.dateGroups,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (error) {
+        console.error('Error saving data:', error);
+        alert('Помилка збереження: ' + error.message);
+    }
+}
+
+function getDefaultFields() {
+    return [
+        { id: 'name', emoji: '📝', name: 'Назва', type: 'text', required: true, isTitle: true },
+        { id: 'place', emoji: '📍', name: 'Місце', type: 'text', required: false },
+        { id: 'time', emoji: '🕐', name: 'Час', type: 'time', required: false },
+        { id: 'link', emoji: '🔗', name: 'Посилання', type: 'url', required: false }
+    ];
+}
 
 // Generate unique ID
 function generateId() {
@@ -439,9 +559,6 @@ function generateSidebarFilters(group) {
 
     if (!group) return;
 
-    // Check if folder has only tasks
-    const hasOnlyTasks = group.events.every(e => e.type === 'task');
-    const hasTasks = group.events.some(e => e.type === 'task');
     const hasMovies = group.events.some(e => !e.type || e.type === 'movie');
 
     // Type filter (only if multiple types)
@@ -449,15 +566,6 @@ function generateSidebarFilters(group) {
     if (types.length > 1) {
         const typeSection = createFilterSection('📋', 'Тип запису', 'type', types);
         container.appendChild(typeSection);
-    }
-
-    // Keyword filter - ONLY for folders with tasks
-    if (hasTasks) {
-        const textValues = getTextValuesFromGroup(group);
-        if (textValues.length > 0) {
-            const textSection = createFilterSection('🔤', 'Ключові слова', 'text', textValues);
-            container.appendChild(textSection);
-        }
     }
 
     // Field filters for movies (only if folder has movies/events)
@@ -495,29 +603,6 @@ function getTypesFromGroup(group) {
     return Object.entries(counts)
         .map(([value, count]) => ({ value, label: typeNames[value] || value, count }))
         .sort((a, b) => b.count - a.count);
-}
-
-function getTextValuesFromGroup(group) {
-    const words = {};
-
-    group.events.forEach(event => {
-        let text = '';
-        if (event.type === 'task') text = event.text || '';
-        else if (event.type === 'note') text = event.text || '';
-        else text = event.name || '';
-
-        // Extract words (3+ characters)
-        const wordList = text.toLowerCase().match(/[а-яіїєґa-z]{3,}/gi) || [];
-        wordList.forEach(word => {
-            words[word] = (words[word] || 0) + 1;
-        });
-    });
-
-    return Object.entries(words)
-        .filter(([_, count]) => count >= 1)
-        .map(([value, count]) => ({ value, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 15);
 }
 
 function getFieldValuesFromGroup(group, fieldId) {
@@ -1162,32 +1247,17 @@ document.getElementById('collapseAllBtn').addEventListener('click', () => {
     document.querySelectorAll('.event-item').forEach(el => el.classList.remove('expanded'));
 });
 
-// ============ LOCAL STORAGE ============
+// ============ DATA PERSISTENCE ============
 
+// Auto-save to Firestore when data changes
 function saveToLocalStorage() {
-    localStorage.setItem('skladwebData', JSON.stringify(documentData));
+    // Also save to Firestore if user is logged in
+    if (currentUser) {
+        saveUserData();
+    }
 }
 
-function loadFromLocalStorage() {
-    const saved = localStorage.getItem('skladwebData');
-    if (saved) {
-        try {
-            documentData = JSON.parse(saved);
-            if (!documentData.fields) {
-                documentData.fields = [
-                    { id: 'name', emoji: '📝', name: 'Назва', type: 'text', required: true, isTitle: true },
-                    { id: 'place', emoji: '📍', name: 'Місце', type: 'text', required: false },
-                    { id: 'time', emoji: '🕐', name: 'Час', type: 'time', required: false },
-                    { id: 'link', emoji: '🔗', name: 'Посилання', type: 'url', required: false }
-                ];
-            }
-        } catch {
-            initSampleData();
-        }
-    } else {
-        initSampleData();
-    }
-
+function loadViewMode() {
     const savedViewMode = localStorage.getItem('skladwebViewMode');
     if (savedViewMode) {
         viewMode = savedViewMode;
@@ -1197,5 +1267,5 @@ function loadFromLocalStorage() {
 }
 
 // Initialize
-loadFromLocalStorage();
-render();
+loadViewMode();
+initAuth();

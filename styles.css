@@ -10,6 +10,139 @@ body {
     min-height: 100vh;
 }
 
+/* ============ LOGIN SCREEN ============ */
+.login-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.login-container {
+    background: white;
+    padding: 50px 40px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    max-width: 400px;
+    width: 90%;
+}
+
+.login-logo {
+    font-size: 80px;
+    margin-bottom: 10px;
+}
+
+.login-title {
+    font-size: 32px;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.login-subtitle {
+    color: #7f8c8d;
+    font-size: 14px;
+    margin-bottom: 30px;
+}
+
+.google-login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 24px;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #444;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.google-login-btn:hover {
+    background: #f8f9fa;
+    border-color: #4285F4;
+    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+}
+
+.login-hint {
+    margin-top: 20px;
+    font-size: 12px;
+    color: #95a5a6;
+}
+
+/* User Info in Toolbar */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    padding-left: 15px;
+    border-left: 1px solid rgba(255,255,255,0.2);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #3498db;
+}
+
+.user-name {
+    color: white;
+    font-size: 13px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.logout-btn {
+    background: #e74c3c !important;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+}
+
+.logout-btn:hover {
+    background: #c0392b !important;
+}
+
+/* Loading State */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #e0e0e0;
+    border-top-color: #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 /* Toolbar */
 .toolbar {
     position: fixed;
